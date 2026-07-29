@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <title>Wedding Event OS Pro - Secure Edition</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    :root {
+      --accent-pink: #ec4899;
+      --accent-purple: #8b5cf6;
+      --accent-cyan: #06b6d4;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --bg-card: rgba(15, 23, 42, 0.75);
+      --bg-input: #0f172a;
+      --border: rgba(255, 255, 255, 0.12);
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --radius: 16px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+    
+    body {
+      background: radial-gradient(circle at top left, #1e1b4b, #0f172a, #030712);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 1rem;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      overflow-x: hidden;
+    }
+
+    @media(min-width: 768px) {
+      body { padding: 2rem; }
+    }
+
+    /* LOGIN / PIN SCREEN OVERLAY */
+    #authOverlay {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: radial-gradient(circle at center, #1e1b4b, #030712);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .auth-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      padding: 2rem;
+      border-radius: 24px;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .auth-card i.lock-icon {
+      font-size: 2.5rem;
+      background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 1rem;
+    }
+
+    .auth-card h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .auth-card p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+
+    .pin-input {
+      letter-spacing: 8px;
+      font-size: 1.5rem !important;
+      text-align: center;
+      font-weight: 800;
+    }
+
+    .container { max-width: 1400px; margin: 0 auto; display: none; width: 100%; }
+
+    header {
+      background: rgba(30, 27, 75, 0.4);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      padding: 1.2rem;
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+
+    @media(min-width: 768px) {
+      header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.5rem 2rem;
+        margin-bottom: 2rem;
+      }
+    }
+
+    header h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      background: linear-gradient(to right, #f472b6, #a78bfa, #38bdf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    @media(min-width: 768px) {
+      header h1 { font-size: 1.8rem; }
+    }
+
+    .header-btns { 
+      display: flex; 
+      gap: 8px; 
+      flex-wrap: wrap; 
+      width: 100%; 
+    }
+
+    @media(min-width: 768px) {
+      .header-btns { width: auto; }
+    }
+
+    .tab-nav {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 1.5rem;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 6px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      padding: 10px 16px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      border-radius: 10px;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    @media(min-width: 768px) {
+      .tab-btn { padding: 12px 22px; font-size: 0.95rem; }
+    }
+
+    .tab-btn.active, .tab-btn:hover {
+      background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(139, 92, 246, 0.2));
+      color: var(--text-main);
+      border: 1px solid rgba(236, 72, 153, 0.4);
+    }
+
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .metric-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      padding: 1.2rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    .metric-card h3 { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.4rem; }
+    .metric-card .value { font-size: 1.5rem; font-weight: 800; }
+
+    @media(min-width: 768px) {
+      .metric-card .value { font-size: 1.9rem; }
+    }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
+    @media(min-width: 950px) { .grid-2 { grid-template-columns: 2fr 1fr; gap: 2rem; } }
+
+    .card {
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      padding: 1.2rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      margin-bottom: 1.2rem;
+      width: 100%;
+    }
+
+    @media(min-width: 768px) {
+      .card { padding: 1.8rem; margin-bottom: 1.5rem; }
+    }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 1.2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.4rem; }
+    input, select {
+      width: 100%;
+      padding: 0.7rem 0.9rem;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-main);
+      outline: none;
+      font-size: 0.9rem;
+    }
+    input:focus, select:focus { border-color: var(--accent-purple); }
+
+    .btn {
+      width: 100%;
+      padding: 0.8rem;
+      background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);
+      font-size: 0.9rem;
+    }
+    .btn:hover { opacity: 0.9; transform: translateY(-2px); }
+
+    .btn-sm {
+      padding: 5px 10px;
+      font-size: 0.75rem;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .btn-edit { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); }
+    .btn-pay { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .btn-sec { background: rgba(255, 255, 255, 0.08); color: var(--text-main); border: 1px solid var(--border); width: auto; padding: 6px 12px; font-size: 0.8rem; }
+    .btn-danger-sec { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.4); width: auto; padding: 6px 12px; font-size: 0.8rem; }
+
+    /* Responsive Table Styling */
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    table { width: 100%; border-collapse: collapse; text-align: left; min-width: 500px; }
+    th, td { padding: 0.8rem; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+    th { color: var(--text-muted); font-weight: 600; background: rgba(15, 23, 42, 0.8); }
+
+    .action-btn { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.9rem; padding: 4px; }
+  </style>
+</head>
+<body>
+
+  <!-- AUTHENTICATION SCREEN -->
+  <div id="authOverlay">
+    <div class="auth-card">
+      <i class="fa-solid fa-shield-halved lock-icon"></i>
+      <h2>Access Protected</h2>
+      <p>Enter Master Passcode to unlock system</p>
+      <form id="loginForm">
+        <div class="form-group">
+          <input type="password" id="inputPin" class="pin-input" maxlength="6" placeholder="••••" required autofocus>
+        </div>
+        <button type="submit" class="btn">Unlock System</button>
+      </form>
+      <p style="margin-top: 15px; font-size: 0.75rem; color: var(--text-muted);">Default PIN: 1234</p>
+    </div>
+  </div>
+
+  <!-- MAIN SYSTEM DASHBOARD -->
+  <div class="container" id="mainSystem">
+    <header>
+      <h1><i class="fa-solid fa-crown"></i> Wedding Event OS</h1>
+      <div class="header-btns">
+        <button class="btn btn-sec" onclick="changePinModal()"><i class="fa-solid fa-key"></i> PIN</button>
+        <button class="btn btn-danger-sec" onclick="clearAllData()"><i class="fa-solid fa-trash"></i> Reset Data</button>
+        <button class="btn btn-sec" onclick="lockSystem()"><i class="fa-solid fa-lock"></i> Lock</button>
+      </div>
+    </header>
+
+    <div class="tab-nav">
+      <button class="tab-btn active" onclick="switchTab('timeline', event)"><i class="fa-solid fa-clock"></i> Run Sheet</button>
+      <button class="tab-btn" onclick="switchTab('budget', event)"><i class="fa-solid fa-calculator"></i> Budget</button>
+      <button class="tab-btn" onclick="switchTab('guests', event)"><i class="fa-solid fa-users"></i> Guests</button>
+      <button class="tab-btn" onclick="switchTab('vendors', event)"><i class="fa-solid fa-handshake"></i> Vendors</button>
+    </div>
+
+    <!-- TAB 1: RUN SHEET / TIMELINE -->
+    <div id="tab-timeline" class="tab-content active">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Wedding Day Timeline & Responsible Persons</div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Event / Activity</th>
+                  <th>In-Charge</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="timelineTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" id="timelineFormTitle">Add New Event Activity</div>
+          <form id="addTimelineForm">
+            <input type="hidden" id="tEditId">
+            <div class="form-group">
+              <label>Event Name</label>
+              <input type="text" id="tName" required placeholder="e.g. Poruwa Ceremony">
+            </div>
+            <div class="form-group">
+              <label>Start Time</label>
+              <input type="time" id="tStart" required>
+            </div>
+            <div class="form-group">
+              <label>End Time</label>
+              <input type="time" id="tEnd" required>
+            </div>
+            <div class="form-group">
+              <label>In-Charge Person</label>
+              <input type="text" id="tPerson" required placeholder="e.g. Uncle Nimal / Best Man">
+            </div>
+            <button type="submit" class="btn" id="tBtn">Save Event Schedule</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: BUDGET PLANNER -->
+    <div id="tab-budget" class="tab-content">
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <h3>Total Estimated Budget</h3>
+          <div class="value" id="totalBudgetVal">Rs. 0.00</div>
+        </div>
+        <div class="metric-card">
+          <h3>Total Actual Spent</h3>
+          <div class="value" style="color:var(--warning);" id="totalSpentVal">Rs. 0.00</div>
+        </div>
+        <div class="metric-card">
+          <h3>Remaining Balance</h3>
+          <div class="value" style="color:var(--success);" id="remainingBudgetVal">Rs. 0.00</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Expenses Breakdown</div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Item / Category</th>
+                  <th>Est. Budget</th>
+                  <th>Actual Spent</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="budgetTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Set Overall Target Budget</div>
+          <div class="form-group">
+            <label>Overall Target Budget (රු.)</label>
+            <input type="number" id="overallBudgetInput" placeholder="e.g. 2500000">
+          </div>
+          <button class="btn" onclick="setOverallBudget()" style="margin-bottom: 1.5rem;">Update Target Budget</button>
+
+          <div class="card-title">Add Expense Item</div>
+          <form id="addBudgetItemForm">
+            <div class="form-group">
+              <label>Category / Description</label>
+              <input type="text" id="bName" required placeholder="e.g. Traditional Dancers">
+            </div>
+            <div class="form-group">
+              <label>Estimated Amount (රු.)</label>
+              <input type="number" id="bEst" required placeholder="0.00">
+            </div>
+            <div class="form-group">
+              <label>Actual Spent Amount (රු.)</label>
+              <input type="number" id="bAct" placeholder="0.00">
+            </div>
+            <button type="submit" class="btn">Add Expense Item</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: GUEST LIST -->
+    <div id="tab-guests" class="tab-content">
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <h3>Total Pax Invited</h3>
+          <div class="value" id="totalGuestsVal">0</div>
+        </div>
+        <div class="metric-card">
+          <h3>Confirmed Guests</h3>
+          <div class="value" style="color:var(--success);" id="confirmedGuestsVal">0</div>
+        </div>
+        <div class="metric-card">
+          <h3>Declined / Pending</h3>
+          <div class="value" style="color:var(--danger);" id="declinedGuestsVal">0</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Guest Directory & Status</div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Category</th>
+                  <th>Pax Count</th>
+                  <th>RSVP Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="guestTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" id="guestFormTitle">Add / Edit Guest</div>
+          <form id="addGuestForm">
+            <input type="hidden" id="gEditId">
+            <div class="form-group">
+              <label>Guest / Family Name</label>
+              <input type="text" id="gName" required placeholder="e.g. Sunimal Perera">
+            </div>
+            <div class="form-group">
+              <label>Side / Category</label>
+              <select id="gSide">
+                <option value="Groom Side">Groom Side</option>
+                <option value="Bride Side">Bride Side</option>
+                <option value="Friends/Office">Friends/Office</option>
+                <option value="VIP">VIP</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Pax Count (පැමිණෙන ගණන)</label>
+              <input type="number" id="gCount" value="1" required min="1">
+            </div>
+            <div class="form-group">
+              <label>RSVP Status</label>
+              <select id="gRsvp">
+                <option value="Confirmed">Confirmed</option>
+                <option value="Pending">Pending</option>
+                <option value="Declined">Declined</option>
+              </select>
+            </div>
+            <button type="submit" class="btn" id="gBtn">Save Guest</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: VENDORS -->
+    <div id="tab-vendors" class="tab-content">
+      <div class="card">
+        <div class="card-title">Vendors & Payment Tracker</div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Service</th>
+                <th>Vendor Name</th>
+                <th>Total Agreed</th>
+                <th>Total Paid So Far</th>
+                <th>Due Balance</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="vendorTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" style="max-width: 600px;">
+        <div class="card-title">Add New Vendor</div>
+        <form id="addVendorForm">
+          <div class="form-group">
+            <label>Service / Role</label>
+            <input type="text" id="vService" required placeholder="e.g. Hotel">
+          </div>
+          <div class="form-group">
+            <label>Vendor Name</label>
+            <input type="text" id="vName" required placeholder="e.g. Cinnamon Grand">
+          </div>
+          <div class="form-group">
+            <label>Total Agreed Price (රු.)</label>
+            <input type="number" id="vTotal" required placeholder="0.00">
+          </div>
+          <div class="form-group">
+            <label>Initial Advance Paid (රු.)</label>
+            <input type="number" id="vPaid" placeholder="0.00">
+          </div>
+          <button type="submit" class="btn">Save Vendor</button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 1. ANTI-COPY & ANTI-INSPECT PROTECTION SCRIPT -->
+  <script>
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.onkeydown = function(e) {
+        if (e.keyCode === 123) return false;
+        if (e.ctrlKey && e.keyCode === 'U'.charCodeAt(0)) return false;
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 'I'.charCodeAt(0)) return false;
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 'C'.charCodeAt(0)) return false;
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 'J'.charCodeAt(0)) return false;
+        if (e.ctrlKey && e.keyCode === 'S'.charCodeAt(0)) return false;
+    };
+  </script>
+
+  <!-- 2. LIVE GOOGLE DRIVE DATABASE DEVICE-LOCK SCRIPT -->
+  <script>
+    (function() {
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzvEOijNAgkKmucXoNPWT6D0uESaVGl1zM70Wm03ql_ySepn1s9jwoud3_Go77HBQCW/exec";
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const clientKey = urlParams.get('key');
+
+        if (!clientKey) {
+            showBlocked("⛔ Access Denied!", "Valid License Key Required in URL (e.g. ?key=wedding_001)");
+            return;
+        }
+
+        const deviceFP = window.btoa(navigator.userAgent + screen.width + "x" + screen.height);
+
+        fetch(`${GOOGLE_SCRIPT_URL}?key=${encodeURIComponent(clientKey)}&device=${encodeURIComponent(deviceFP)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === "SUCCESS") {
+                    console.log("Wedding OS License Verified!");
+                } else {
+                    showBlocked("⛔ Access Denied!", data.message);
+                }
+            })
+            .catch(err => {
+                showBlocked("⛔ Verification Error", "Unable to connect to Google Drive verification server.");
+            });
+
+        function showBlocked(title, msg) {
+            document.body.innerHTML = `
+                <div style="display:flex; justify-content:center; align-items:center; height:100vh; background:#0b1120; color:#ef4444; font-family:sans-serif; text-align:center; padding:20px;">
+                    <div style="background:#1e293b; padding:30px; border-radius:16px; border:1px solid #ef4444; max-width:420px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);">
+                        <h1 style="font-size:1.5rem; margin-bottom:12px; color:#ef4444;">${title}</h1>
+                        <p style="color:#94a3b8; font-size:0.9rem; line-height:1.5;">${msg}</p>
+                    </div>
+                </div>`;
+        }
+    })();
+  </script>
+
+  <!-- 3. MAIN SYSTEM LOGIC SCRIPT -->
+  <script>
+    let savedPin = localStorage.getItem('wedding_os_pin') || '1234';
+
+    document.getElementById('loginForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const enteredPin = document.getElementById('inputPin').value;
+      if(enteredPin === savedPin) {
+        document.getElementById('authOverlay').style.display = 'none';
+        document.getElementById('mainSystem').style.display = 'block';
+        document.getElementById('inputPin').value = '';
+      } else {
+        alert('වැරදි Passcode එකකි! (Incorrect Passcode)');
+        document.getElementById('inputPin').value = '';
+      }
+    });
+
+    function lockSystem() {
+      document.getElementById('mainSystem').style.display = 'none';
+      document.getElementById('authOverlay').style.display = 'flex';
+    }
+
+    function changePinModal() {
+      const current = prompt('Enter Current Passcode:');
+      if(current === savedPin) {
+        const newPin = prompt('Enter NEW Passcode (4 to 6 Digits):');
+        if(newPin && newPin.length >= 4) {
+          savedPin = newPin;
+          localStorage.setItem('wedding_os_pin', savedPin);
+          alert('Passcode එක සාර්ථකව වෙනස් කරන ලදී! (PIN Changed Successfully)');
+        } else {
+          alert('Passcode එක අවම වශයෙන් ඉලක්කම් 4ක් විය යුතුය.');
+        }
+      } else if(current !== null) {
+        alert('පැරණි Passcode එක වැරදියි!');
+      }
+    }
+
+    // STATE MANAGEMENT
+    const defaultState = {
+      overallBudget: 2500000,
+      timeline: [
+        { id: 1, name: 'Arrival of Guests', start: '08:30', end: '09:00', person: 'Uncle Bandara' },
+        { id: 2, name: 'Poruwa Ceremony', start: '09:15', end: '10:00', person: 'Gurusinha (Gurunnanse)' }
+      ],
+      budgetItems: [
+        { id: 1, name: 'Banquet Hall & Menu', est: 1200000, act: 1150000 },
+        { id: 2, name: 'Bridal Dressing', est: 200000, act: 200000 }
+      ],
+      guests: [
+        { id: 1, name: 'Mr. Sarath Silva & Family', side: 'Groom Side', count: 4, rsvp: 'Confirmed' },
+        { id: 2, name: 'Nimal Jayasinghe', side: 'Bride Side', count: 2, rsvp: 'Declined' }
+      ],
+      vendors: [
+        { id: 1, service: 'Photography', name: 'Studio Creative', total: 300000, paid: 50000 }
+      ]
+    };
+
+    let appState = JSON.parse(localStorage.getItem('wedding_os_state')) || JSON.parse(JSON.stringify(defaultState));
+
+    function saveState() {
+      localStorage.setItem('wedding_os_state', JSON.stringify(appState));
+      renderAll();
+    }
+
+    // CLEAR ALL DATA FUNCTION
+    function clearAllData() {
+      if (confirm('ඔබට පද්ධතියේ ඇති සියලුම දත්ත ඉවත් කිරීමට අවශ්‍යද? (Are you sure you want to clear ALL data?)')) {
+        appState = {
+          overallBudget: 0,
+          timeline: [],
+          budgetItems: [],
+          guests: [],
+          vendors: []
+        };
+        saveState();
+        alert('සියලුම දත්ත සාර්ථකව ඉවත් කරන ලදී! (All Data Cleared Successfully)');
+      }
+    }
+
+    function switchTab(tabId, e) {
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('tab-' + tabId).classList.add('active');
+      if (e && e.currentTarget) {
+        e.currentTarget.classList.add('active');
+      }
+    }
+
+    /* --- TIMELINE --- */
+    document.getElementById('addTimelineForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const editId = document.getElementById('tEditId').value;
+      const name = document.getElementById('tName').value;
+      const start = document.getElementById('tStart').value;
+      const end = document.getElementById('tEnd').value;
+      const person = document.getElementById('tPerson').value;
+
+      if(editId) {
+        const item = appState.timeline.find(t => t.id == editId);
+        if(item) { item.name = name; item.start = start; item.end = end; item.person = person; }
+        document.getElementById('tEditId').value = '';
+        document.getElementById('timelineFormTitle').innerText = 'Add New Event Activity';
+        document.getElementById('tBtn').innerText = 'Save Event Schedule';
+      } else {
+        appState.timeline.push({ id: Date.now(), name, start, end, person });
+      }
+      document.getElementById('addTimelineForm').reset();
+      saveState();
+    });
+
+    function editTimeline(id) {
+      const item = appState.timeline.find(t => t.id === id);
+      if(item) {
+        document.getElementById('tEditId').value = item.id;
+        document.getElementById('tName').value = item.name;
+        document.getElementById('tStart').value = item.start;
+        document.getElementById('tEnd').value = item.end;
+        document.getElementById('tPerson').value = item.person;
+        document.getElementById('timelineFormTitle').innerText = 'Edit Event Schedule';
+        document.getElementById('tBtn').innerText = 'Update Schedule';
+      }
+    }
+
+    /* --- BUDGET PLANNER --- */
+    function setOverallBudget() {
+      const val = parseFloat(document.getElementById('overallBudgetInput').value);
+      if(!isNaN(val)) { appState.overallBudget = val; saveState(); }
+    }
+
+    document.getElementById('addBudgetItemForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      appState.budgetItems.push({
+        id: Date.now(),
+        name: document.getElementById('bName').value,
+        est: parseFloat(document.getElementById('bEst').value) || 0,
+        act: parseFloat(document.getElementById('bAct').value) || 0
+      });
+      document.getElementById('addBudgetItemForm').reset();
+      saveState();
+    });
+
+    function editActualSpent(id) {
+      const item = appState.budgetItems.find(b => b.id === id);
+      if(item) {
+        const newVal = prompt(`Update Actual Spent for "${item.name}":`, item.act);
+        if(newVal !== null) {
+          item.act = parseFloat(newVal) || 0;
+          saveState();
+        }
+      }
+    }
+
+    /* --- GUEST LIST --- */
+    document.getElementById('addGuestForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const editId = document.getElementById('gEditId').value;
+      const name = document.getElementById('gName').value;
+      const side = document.getElementById('gSide').value;
+      const count = parseInt(document.getElementById('gCount').value);
+      const rsvp = document.getElementById('gRsvp').value;
+
+      if(editId) {
+        const guest = appState.guests.find(g => g.id == editId);
+        if(guest) {
+          guest.name = name;
+          guest.side = side;
+          guest.count = count;
+          guest.rsvp = rsvp;
+        }
+        document.getElementById('gEditId').value = '';
+        document.getElementById('guestFormTitle').innerText = 'Add / Edit Guest';
+        document.getElementById('gBtn').innerText = 'Save Guest';
+      } else {
+        appState.guests.push({ id: Date.now(), name, side, count, rsvp });
+      }
+
+      document.getElementById('addGuestForm').reset();
+      saveState();
+    });
+
+    function editGuest(id) {
+      const guest = appState.guests.find(g => g.id === id);
+      if(guest) {
+        document.getElementById('gEditId').value = guest.id;
+        document.getElementById('gName').value = guest.name;
+        document.getElementById('gSide').value = guest.side;
+        document.getElementById('gCount').value = guest.count;
+        document.getElementById('gRsvp').value = guest.rsvp;
+
+        document.getElementById('guestFormTitle').innerText = 'Edit Guest Info';
+        document.getElementById('gBtn').innerText = 'Update Guest';
+      }
+    }
+
+    function updateGuestRsvp(id, newStatus) {
+      const guest = appState.guests.find(g => g.id === id);
+      if(guest) {
+        guest.rsvp = newStatus;
+        saveState();
+      }
+    }
+
+    /* --- VENDORS --- */
+    document.getElementById('addVendorForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      appState.vendors.push({
+        id: Date.now(),
+        service: document.getElementById('vService').value,
+        name: document.getElementById('vName').value,
+        total: parseFloat(document.getElementById('vTotal').value) || 0,
+        paid: parseFloat(document.getElementById('vPaid').value) || 0
+      });
+      document.getElementById('addVendorForm').reset();
+      saveState();
+    });
+
+    function addVendorPayment(id) {
+      const vendor = appState.vendors.find(v => v.id === id);
+      if(vendor) {
+        const extraPayment = prompt(`Enter Additional Payment for ${vendor.name} (රු.):`);
+        if(extraPayment && !isNaN(extraPayment)) {
+          vendor.paid += parseFloat(extraPayment);
+          saveState();
+        }
+      }
+    }
+
+    function deleteItem(type, id) {
+      appState[type] = appState[type].filter(item => item.id !== id);
+      saveState();
+    }
+
+    /* --- RENDER ALL DATA --- */
+    function renderAll() {
+      // Timeline
+      const timelineTable = document.getElementById('timelineTable');
+      timelineTable.innerHTML = '';
+      appState.timeline.sort((a,b) => a.start.localeCompare(b.start)).forEach(t => {
+        timelineTable.innerHTML += `
+          <tr>
+            <td><strong>${t.start} - ${t.end}</strong></td>
+            <td>${t.name}</td>
+            <td><span style="color:var(--accent-cyan);"><i class="fa-solid fa-user"></i> ${t.person}</span></td>
+            <td>
+              <button class="btn-sm btn-edit" onclick="editTimeline(${t.id})">Edit</button>
+              <button class="action-btn" onclick="deleteItem('timeline', ${t.id})"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          </tr>
+        `;
+      });
+
+      // Budget
+      const budgetTable = document.getElementById('budgetTable');
+      budgetTable.innerHTML = '';
+      let totalSpent = 0;
+
+      appState.budgetItems.forEach(b => {
+        totalSpent += b.act;
+        budgetTable.innerHTML += `
+          <tr>
+            <td><strong>${b.name}</strong></td>
+            <td>Rs. ${b.est.toLocaleString()}</td>
+            <td>Rs. ${b.act.toLocaleString()}</td>
+            <td>
+              <button class="btn-sm btn-edit" onclick="editActualSpent(${b.id})">Edit Actual</button>
+              <button class="action-btn" onclick="deleteItem('budgetItems', ${b.id})"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          </tr>
+        `;
+      });
+
+      document.getElementById('overallBudgetInput').value = appState.overallBudget || '';
+      document.getElementById('totalBudgetVal').innerText = `Rs. ${(appState.overallBudget || 0).toLocaleString()}`;
+      document.getElementById('totalSpentVal').innerText = `Rs. ${totalSpent.toLocaleString()}`;
+      document.getElementById('remainingBudgetVal').innerText = `Rs. ${((appState.overallBudget || 0) - totalSpent).toLocaleString()}`;
+
+      // Guests
+      const guestTable = document.getElementById('guestTable');
+      guestTable.innerHTML = '';
+      let totalGuests = 0, confirmedGuests = 0, declinedGuests = 0;
+
+      appState.guests.forEach(g => {
+        totalGuests += g.count;
+        if(g.rsvp === 'Confirmed') confirmedGuests += g.count;
+        if(g.rsvp === 'Declined' || g.rsvp === 'Pending') declinedGuests += g.count;
+
+        guestTable.innerHTML += `
+          <tr>
+            <td><strong>${g.name}</strong></td>
+            <td>${g.side}</td>
+            <td><strong>${g.count} Pax</strong></td>
+            <td>
+              <select onchange="updateGuestRsvp(${g.id}, this.value)" style="padding:4px 8px; font-size:0.8rem; width:auto;">
+                <option value="Confirmed" ${g.rsvp === 'Confirmed' ? 'selected' : ''}>Confirmed</option>
+                <option value="Pending" ${g.rsvp === 'Pending' ? 'selected' : ''}>Pending</option>
+                <option value="Declined" ${g.rsvp === 'Declined' ? 'selected' : ''}>Declined</option>
+              </select>
+            </td>
+            <td>
+              <button class="btn-sm btn-edit" onclick="editGuest(${g.id})">Edit</button>
+              <button class="action-btn" onclick="deleteItem('guests', ${g.id})"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          </tr>
+        `;
+      });
+
+      document.getElementById('totalGuestsVal').innerText = totalGuests;
+      document.getElementById('confirmedGuestsVal').innerText = confirmedGuests;
+      document.getElementById('declinedGuestsVal').innerText = declinedGuests;
+
+      // Vendors
+      const vendorTable = document.getElementById('vendorTable');
+      vendorTable.innerHTML = '';
+
+      appState.vendors.forEach(v => {
+        const due = v.total - v.paid;
+        vendorTable.innerHTML += `
+          <tr>
+            <td><strong>${v.service}</strong></td>
+            <td>${v.name}</td>
+            <td>Rs. ${v.total.toLocaleString()}</td>
+            <td>Rs. ${v.paid.toLocaleString()}</td>
+            <td style="color:${due > 0 ? 'var(--danger)' : 'var(--success)'}">Rs. ${due.toLocaleString()}</td>
+            <td>
+              <button class="btn-sm btn-pay" onclick="addVendorPayment(${v.id})">+ Pay</button>
+              <button class="action-btn" onclick="deleteItem('vendors', ${v.id})"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    renderAll();
+  </script>
+</body>
+</html>
