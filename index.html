@@ -287,6 +287,10 @@
     th { color: var(--text-muted); font-weight: 600; background: rgba(15, 23, 42, 0.8); }
 
     .action-btn { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.9rem; padding: 4px; }
+
+    #syncBadge { font-size: 0.75rem; padding: 4px 8px; border-radius: 6px; font-weight: bold; display: inline-flex; align-items: center; gap: 4px; }
+    .sync-success { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+    .sync-loading { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
   </style>
 </head>
 <body>
@@ -310,7 +314,10 @@
   <!-- MAIN SYSTEM DASHBOARD -->
   <div class="container" id="mainSystem">
     <header>
-      <h1><i class="fa-solid fa-crown"></i> Wedding Event OS</h1>
+      <h1>
+        <i class="fa-solid fa-crown"></i> Wedding Event OS
+        <span id="syncBadge" class="sync-success"><i class="fa-solid fa-cloud-check"></i> Cloud Synced</span>
+      </h1>
       <div class="header-btns">
         <button class="btn btn-sec" onclick="changePinModal()"><i class="fa-solid fa-key"></i> PIN</button>
         <button class="btn btn-danger-sec" onclick="clearAllData()"><i class="fa-solid fa-trash"></i> Reset Data</button>
@@ -488,7 +495,7 @@
               </select>
             </div>
             <div class="form-group">
-              <label>Pax Count (පැමිණෙන ගණන)</label>
+              <label>Pax Count (අමුත්තන් ගණන)</label>
               <input type="number" id="gCount" value="1" required min="1">
             </div>
             <div class="form-group">
@@ -565,26 +572,37 @@
     };
   </script>
 
-  <!-- 2. LIVE GOOGLE DRIVE DATABASE DEVICE-LOCK SCRIPT -->
+  <!-- 2. LIVE GOOGLE DRIVE DATABASE DEVICE-LOCK & AUTO-SYNC SCRIPT -->
   <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const clientKey = urlParams.get('key');
+    const customEndpoint = urlParams.get('endpoint');
+
+    // ඔබ ලබාගත් Google Web App URL එක මෙතැනට තබන්න:
+    const DEFAULT_ENDPOINT = "https://script.google.com/macros/s/AKfycbzvEOijNAgkKmucXoNPWT6D0uESaVGl1zM70Wm03ql_ySepn1s9jwoud3_Go77HBQCW/exec";
+    const GOOGLE_SCRIPT_URL = customEndpoint ? decodeURIComponent(customEndpoint) : DEFAULT_ENDPOINT;
+
+    let isLicenseVerified = false;
+
     (function() {
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzvEOijNAgkKmucXoNPWT6D0uESaVGl1zM70Wm03ql_ySepn1s9jwoud3_Go77HBQCW/exec";
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const clientKey = urlParams.get('key');
-
         if (!clientKey) {
-            showBlocked("⛔ Access Denied!", "Valid License Key Required in URL");
+            showBlocked("⛔ Access Denied!", "Valid License Key Required in URL (e.g. ?key=wedding_001)");
             return;
         }
 
-        const deviceFP = window.btoa(navigator.userAgent + screen.width + "x" + screen.height);
+        const deviceFP = window.btoa(navigator.userAgent.replace(/\s+/g, '') + screen.width + "x" + screen.height);
 
         fetch(`${GOOGLE_SCRIPT_URL}?key=${encodeURIComponent(clientKey)}&device=${encodeURIComponent(deviceFP)}`)
             .then(res => res.json())
             .then(data => {
                 if (data.status === "SUCCESS") {
-                    console.log("Wedding OS License Verified!");
+                    isLicenseVerified = true;
+                    if (data.cloudData && data.cloudData.trim().length > 0) {
+                        try {
+                            const parsedCloud = JSON.parse(data.cloudData);
+                            restoreWeddingStateFromCloud(parsedCloud);
+                        } catch(err) { console.error("Cloud Data Restore Error", err); }
+                    }
                 } else {
                     showBlocked("⛔ Access Denied!", data.message);
                 }
@@ -603,6 +621,31 @@
                 </div>`;
         }
     })();
+
+    function syncDataToCloud(statePayload) {
+        if (!clientKey || !isLicenseVerified) return;
+        const syncBadge = document.getElementById('syncBadge');
+        if (syncBadge) {
+            syncBadge.className = "sync-loading";
+            syncBadge.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Syncing...`;
+        }
+
+        const payload = encodeURIComponent(JSON.stringify(statePayload));
+        fetch(`${GOOGLE_SCRIPT_URL}?key=${encodeURIComponent(clientKey)}&action=save_data&payload=${payload}`)
+            .then(res => res.json())
+            .then(data => {
+                if (syncBadge) {
+                    syncBadge.className = "sync-success";
+                    syncBadge.innerHTML = `<i class="fa-solid fa-cloud-check"></i> Cloud Synced`;
+                }
+            })
+            .catch(err => {
+                if (syncBadge) {
+                    syncBadge.className = "sync-loading";
+                    syncBadge.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Sync Failed`;
+                }
+            });
+    }
   </script>
 
   <!-- 3. MAIN SYSTEM LOGIC SCRIPT -->
@@ -639,7 +682,7 @@
           alert('Passcode එක අවම වශයෙන් ඉලක්කම් 4ක් විය යුතුය.');
         }
       } else if(current !== null) {
-        alert('පැරණි Passcode එක වැරදියි!');
+        alert('වර්තමාන Passcode එක වැරදියි!');
       }
     }
 
@@ -667,12 +710,20 @@
 
     function saveState() {
       localStorage.setItem('wedding_os_state', JSON.stringify(appState));
+      syncDataToCloud(appState);
+      renderAll();
+    }
+
+    function restoreWeddingStateFromCloud(state) {
+      if (!state) return;
+      appState = state;
+      localStorage.setItem('wedding_os_state', JSON.stringify(appState));
       renderAll();
     }
 
     // CLEAR ALL DATA FUNCTION
     function clearAllData() {
-      if (confirm('ඔබට පද්ධතියේ ඇති සියලුම දත්ත ඉවත් කිරීමට අවශ්‍යද? (Are you sure you want to clear ALL data?)')) {
+      if (confirm('සියලුම දත්තයන් ඉවත් කිරීමට අවශ්‍යද? (Are you sure you want to clear ALL data?)')) {
         appState = {
           overallBudget: 0,
           timeline: [],
@@ -681,7 +732,7 @@
           vendors: []
         };
         saveState();
-        alert('සියලුම දත්ත සාර්ථකව ඉවත් කරන ලදී! (All Data Cleared Successfully)');
+        alert('සියලුම දත්තයන් සාර්ථකව ඉවත් කරන ලදී! (All Data Cleared Successfully)');
       }
     }
 
